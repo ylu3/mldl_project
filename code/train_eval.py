@@ -155,7 +155,7 @@ netG_rgb = ResBase()
 netG_depth = ResBase()
 
 # Main task: classifier
-classnumber = 47 if args.smallset is False else 6
+classnumber = 47 if args.smallset is False else 5
 netF = ResClassifier(input_dim=input_dim_F * 2, class_num=classnumber, dropout_p=args.dropout_p)
 netF.apply(weights_init)
 
