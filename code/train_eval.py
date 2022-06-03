@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from net import ResBase, ResClassifier, RelativeRotationClassifier
 from data_loader import DatasetGeneratorMultimodal, MyTransformer, INPUT_RESOLUTION
 from utils import *
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 
 # Parse arguments
 parser = argparse.ArgumentParser()
@@ -202,7 +202,7 @@ for epoch in range(first_epoch, args.epochs + 1):
     rot_target_loader_iter = IteratorWrapper(rot_target_loader)
 
     # Training loop. The tqdm thing is to show progress bar
-    with tqdm(train_loader_source, desc="Training: ") as pb:
+    with tqdm(total=len(train_loader_source), desc="Training: ") as pb:
         correct = 0.0
         num_predictions = 0.0
         train_loss = 0
