@@ -150,9 +150,11 @@ input_dim_F = 512
 
 # RGB feature extractor based on ResNet18
 netG_rgb = ResBase()
+netG_rgb.apply(weights_init)
 
 # Depth feature extractor based on ResNet18
 netG_depth = ResBase()
+netG_rgb.apply(weights_init)
 
 # Main task: classifier
 classnumber = 47 if args.smallset is False else 5
