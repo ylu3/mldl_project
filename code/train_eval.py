@@ -316,7 +316,7 @@ for epoch in range(first_epoch, args.epochs + 1):
         #Output the accuracy
         val_acc_cls = correct / num_predictions
         val_loss_cls_per_batch = val_loss_cls / args.test_batches
-        print("Epoch: {} - Validation source accuracy (Classification): {}".format(epoch, val_acc))
+        print("Epoch: {} - Validation source accuracy (Classification): {}".format(epoch, val_acc_cls))
 
     del img_rgb, img_depth, img_label_source, feat_rgb, feat_depth, preds
 
