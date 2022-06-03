@@ -176,7 +176,7 @@ opt_g_depth = optim.SGD(netG_depth.parameters(), lr=args.lr, momentum=0.9, weigh
 opt_f = optim.SGD(netF.parameters(), lr=args.lr * args.lr_mult, momentum=0.9, weight_decay=args.weight_decay)
 opt_f_rot = optim.SGD(netF_rot.parameters(), lr=args.lr * args.lr_mult, momentum=0.9, weight_decay=args.weight_decay)
 
-optims_list = []
+optims_list = [opt_g_rgb, opt_g_depth, opt_f, opt_f_rot]
 if not args.sanitycheck:
     optims_list = [opt_g_rgb, opt_g_depth, opt_f, opt_f_rot]
 
