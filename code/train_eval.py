@@ -147,13 +147,18 @@ rot_test_target_loader = DataLoader(rot_set_target,
 """
 # This needs to be changed if a different backbone is used instead of ResNet18
 input_dim_F = 512
+
 # RGB feature extractor based on ResNet18
 netG_rgb = ResBase()
+
 # Depth feature extractor based on ResNet18
 netG_depth = ResBase()
+
 # Main task: classifier
-netF = ResClassifier(input_dim=input_dim_F * 2, class_num=47, dropout_p=args.dropout_p)
+classnumber = 47 if args.smallset is False else 5
+netF = ResClassifier(input_dim=input_dim_F * 2, class_num=classnumber, dropout_p=args.dropout_p)
 netF.apply(weights_init)
+
 # Pretext task: relative rotation classifier
 netF_rot = RelativeRotationClassifier(input_dim=input_dim_F * 2, class_num=4)
 netF_rot.apply(weights_init)
