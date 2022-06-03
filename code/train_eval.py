@@ -223,6 +223,7 @@ for epoch in range(first_epoch, args.epochs + 1):
 
                 if args.sanitycheck and batch_num == 0:
                     print("Sanity check : Training loss (Classification): {} on {} classes.".format(train_loss_cls, classnumber))
+                    exit(1)
 
                 # Entropy loss
                 if args.weight_ent > 0.:
