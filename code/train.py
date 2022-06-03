@@ -55,7 +55,7 @@ else:
     print(f"Running on device {torch.cuda.get_device_name(device)}")
 
 # Center crop, no random flip
-test_transform = MyTransform([int((256 - INPUT_RESOLUTION) / 2), int((256 - INPUT_RESOLUTION) / 2)], False)
+test_transform = MyTransformer([int((256 - INPUT_RESOLUTION) / 2), int((256 - INPUT_RESOLUTION) / 2)], False)
 
 """
     Prepare datasets
