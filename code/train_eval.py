@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from net import ResBase, ResClassifier, RelativeRotationClassifier
 from data_loader import DatasetGeneratorMultimodal, MyTransformer, INPUT_RESOLUTION
 from utils import *
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 
 # Parse arguments
 parser = argparse.ArgumentParser()
