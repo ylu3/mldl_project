@@ -25,6 +25,8 @@ def make_sync_dataset(root, label, ds_name='synROD'):
 
     with open(label, 'r') as labeltxt:
         for line in labeltxt:
+            if len(line) == 0:
+                break
             data = line.strip().split(' ')
             if not is_image_file(data[0]):
                 continue
