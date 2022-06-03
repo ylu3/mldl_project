@@ -1,0 +1,10 @@
+apple/***/apple_0_05_00004804.png 0
+ball/***/ball_10_05_00002914.png 1
+banana/***/banana_15_05_00000603.png 2
+bell_papper/***/bell_papper_22_05_00002213.png 3
+binder/***/binder_28_05_00004616.png 4
+bowl/***/bowl_33_05_00004401.png 5
+calculator/***/calculator_38_05_00001302.png 6
+camera/***/camera_44_05_00002409.png 7
+cap/***/cap_49_05_00004001.png 8
+cell_phone/***/cell_phone_57_05_00004206.png 9

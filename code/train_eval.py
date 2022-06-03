@@ -221,6 +221,9 @@ for epoch in range(first_epoch, args.epochs + 1):
                 correct += (torch.argmax(logits, dim=1) == img_label_source).sum().item()
                 num_predictions += logits.shape[0]
 
+                if args.sanitycheck and batch_num == 0:
+                    print("Sanity check : Training loss (Classification): {} on {} classes.".format(train_loss_cls, classnumber))
+
                 # Entropy loss
                 if args.weight_ent > 0.:
                     # Load target batch

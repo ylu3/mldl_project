@@ -1,15 +1,19 @@
+#!/usr/bin/env python3
 import argparse
 import functools
-import os.path
+import os
 import time
 from datetime import datetime
 from typing import Sequence, Text, Union
+import pandas as pd
+import numpy as np
 
 import torch
 import torch.nn as nn
 import torch.optim as opt
 import torch.nn.functional as F
 
+data_root = '../datasets/ROD-synROD'
 
 def weights_init(m):
     """
@@ -130,7 +134,7 @@ def add_base_args(parser: argparse.ArgumentParser):
                              " rotation task. Note that the evaluation on target is always done on all batches")
     parser.add_argument('--resume', action='store_true', help="Resume from checkpoint if it exists")
     parser.add_argument('--smallset', action='store_true', default=False, help="Train on small set")
-
+    parser.add_argument('--sanitycheck', action='store_true', default=False, help="Check sanity set")
 
 def make_paths(root, smallset=False):
     data_root_source = os.path.join(root, 'synROD')
@@ -268,3 +272,17 @@ def load_checkpoint(path: Text,
         return data['epoch'] + 1
     else:
         return default_epoch
+
+def extract_dataset(topK, firstC, input, ouput):
+    input = os.path.join(data_root, input)
+    df_rod = pd.read_csv(input, sep=" ", header=None)
+    df_rod.columns = ["path", "category"]
+    df_rod_extracted = df_rod.groupby('category').head(topK).sort_values('category')
+    df_rod_extracted.loc[df_rod_extracted['category'] < firstC].to_csv(ouput, header=None, index=None, sep=' ')
+
+def extract_small_dataset():
+    extract_dataset(20, 5, 'ROD/wrgbd_40k-split_sync.txt', 'smalldatasets/smallROD.txt')
+    extract_dataset(20, 5, 'synROD/synARID_50k-split_sync_train1.txt', 'smalldatasets/smallsynROD_train.txt')
+    extract_dataset(20, 5, 'synROD/synARID_50k-split_sync_test1.txt', 'smalldatasets/smallsynROD_test.txt')
+
+# extract_small_dataset()

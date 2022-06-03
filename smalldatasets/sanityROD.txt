@@ -1,0 +1,10 @@
+apple/apple_4/apple_4_4_116_***.png 0
+ball/ball_6/ball_6_4_71_***.png 1
+banana/banana_1/banana_1_2_116_***.png 2
+bell_pepper/bell_pepper_2/bell_pepper_2_4_151_***.png 3
+binder/binder_2/binder_2_2_161_***.png 4
+bowl/bowl_6/bowl_6_2_211_***.png 5
+calculator/calculator_5/calculator_5_1_46_***.png 6
+camera/camera_3/camera_3_2_36_***.png 7
+cap/cap_2/cap_2_1_41_***.png 8
+cell_phone/cell_phone_5/cell_phone_5_1_31_***.png 9
