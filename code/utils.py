@@ -129,7 +129,7 @@ def add_base_args(parser: argparse.ArgumentParser):
                         help="Number of batches to be considered at test time for source classification and the" 
                              " rotation task. Note that the evaluation on target is always done on all batches")
     parser.add_argument('--resume', action='store_true', help="Resume from checkpoint if it exists")
-    parser.add_argument('--samllset', action='store_true', default=False, help="Train on small set")
+    parser.add_argument('--smallset', action='store_true', default=False, help="Train on small set")
 
 
 def make_paths(root, smallset=False):
