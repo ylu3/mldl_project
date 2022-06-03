@@ -181,7 +181,7 @@ for epoch in range(first_epoch, args.epochs + 1):
     # ========================= TRAINING =========================
 
     # Train source (recognition)
-    train_loader_source_rec_iter = train_loader_source
+    train_loader_source_rec_iter = iter(train_loader_source)
     # Train target (entropy)
     train_target_loader_iter = IteratorWrapper(train_loader_target)
 
@@ -197,29 +197,37 @@ for epoch in range(first_epoch, args.epochs + 1):
             with OptimizerManager(optims_list):
                 # Compute source features
                 img_rgb, img_depth, img_label_source = map_to_device(device, (img_rgb, img_depth, img_label_source))
-                # TODO
                 """
-                Here you should compute features for RGB and Depth, concatenate them along the feature dimension
+                Compute features for RGB and Depth, concatenate them along the feature dimension
                 and then compute the main task logits.
                 
                 Then compute the classidication loss. 
                 """
+                feat_rgb, _ = netG_rgb(img_rgb)
+                feat_depth, _ = netG_depth(img_depth)
+                features_source = torch.cat((feat_rgb, feat_depth), 1)
+                logits = netF(features_source)
+
+                # Classification los
+                loss_rec = ce_loss(logits, img_label_source)
 
                 # Entropy loss
                 if args.weight_ent > 0.:
                     # Load target batch
                     img_rgb, img_depth, _ = train_target_loader_iter.get_next()
+                    # Compute target features
+                    img_rgb, img_depth = map_to_device(device, (img_rgb, img_depth))
+                    feat_rgb, _ = netG_rgb(img_rgb)
+                    feat_depth, _ = netG_depth(img_depth)
+                    features_target = torch.cat((feat_rgb, feat_depth), 1)
+                    logits = netF(features_target)
 
-                    # TODO
-                    """
-                    Here you should compute target features for RGB and Depth, concatenate them and compute logits.
-                    Then you use the logits to compute the entropy loss.
-                    """
+                    loss_ent = entropy_loss(logits)
                 else:
                     loss_ent = 0
 
                 # Backpropagate
-                loss = ...  # TODO: compute the total loss before backpropagating
+                loss = loss_rec + args.weight_ent * loss_ent # compute the total loss before backpropagating
                 loss.backward()
 
                 del img_rgb, img_depth, img_label_source
@@ -228,31 +236,47 @@ for epoch in range(first_epoch, args.epochs + 1):
                 if args.weight_rot > 0.0:
                     # Load batch: rotation, source
                     img_rgb, img_depth, _, rot_label = rot_source_loader_iter.get_next()
-
-                    # TODO
                     """
-                    Here you should compute the features (without pooling!), concatenate them and
+                    Compute the features (without pooling!), concatenate them and
                     then compute the rotation classification loss
                     """
 
-                    loss_rot = ...  # TODO
-                    loss = ...  # TODO: compute the total loss
+                    img_rgb, img_depth, rot_label = map_to_device(device, (img_rgb, img_depth, rot_label))
+
+                    # Compute features (without pooling!)
+                    _, pooled_rgb = netG_rgb(img_rgb)
+                    _, pooled_depth = netG_depth(img_depth)
+                    # Prediction
+                    logits_rot = netF_rot(torch.cat((pooled_rgb, pooled_depth), 1))
+
+                    # Classification loss for the rleative rotation task
+                    loss_rot = ce_loss(logits_rot, rot_label)
+                    loss = args.weight_rot * loss_rot # compute the total loss
+
                     # Backpropagate
                     loss.backward()
-
                     loss_rot = loss_rot.item()
 
-                    del img_rgb, img_depth, rot_label, loss
-
-                    # Load batch: rotation, target
-                    img_rgb, img_depth, _, rot_label = rot_target_loader_iter.get_next()
-
-                    # TODO
+                    del img_rgb, img_depth, rot_label, pooled_rgb, pooled_depth, logits_rot, loss
                     """
                     Same thing, but for target
                     """
+                    # Load batch: rotation, target
+                    img_rgb, img_depth, _, rot_label = rot_target_loader_iter.get_next()
+                    img_rgb, img_depth, rot_label = map_to_device(device, (img_rgb, img_depth, rot_label))
 
-                    del img_rgb, img_depth, rot_label, loss
+                    # Compute features (without pooling!)
+                    _, pooled_rgb = netG_rgb(img_rgb)
+                    _, pooled_depth = netG_depth(img_depth)
+                    # Prediction
+                    logits_rot = netF_rot(torch.cat((pooled_rgb, pooled_depth), 1))
+
+                    # Classification loss for the rleative rotation task
+                    loss = args.weight_rot * ce_loss(logits_rot, rot_label)
+                    # Backpropagate
+                    loss.backward()
+                
+                    del img_rgb, img_depth, rot_label, pooled_rgb, pooled_depth, logits_rot, loss
 
                 pb.update(1)
 
@@ -262,96 +286,145 @@ for epoch in range(first_epoch, args.epochs + 1):
     actual_test_batches = min(len(test_loader_source), args.test_batches or len(test_loader_source))
     with EvaluationManager(net_list), tqdm(total=actual_test_batches, desc="TestClS") as pb:
         test_source_loader_iter = iter(test_loader_source)
-
+        correct = 0.0
+        num_predictions = 0.0
+        val_loss = 0.0
         for num_batch, (img_rgb, img_depth, img_label_source) in enumerate(test_source_loader_iter):
             # By default validate only on 100 batches
             if num_batch >= args.test_batches and args.test_batches > 0:
                 break
-
-            # TODO
             """
-            Here you should move the batch on GPU, compute the features and then the
+            Move the batch on GPU, compute the features and then the
             main task prediction
             """
+            # Compute source features
+            img_rgb, img_depth, img_label_source = map_to_device(device, (img_rgb, img_depth, img_label_source))
+            feat_rgb, _ = netG_rgb(img_rgb)
+            feat_depth, _ = netG_depth(img_depth)
+            features_source = torch.cat((feat_rgb, feat_depth), 1)
+
+            # Compute predictions
+            preds = netF(features_source)
+
+            val_loss += ce_loss(preds, img_label_source).item()
+            correct += (torch.argmax(preds, dim=1) == img_label_source).sum().item()
+            num_predictions += preds.shape[0]
 
             pb.update(1)
 
-        # TODO: output the accuracy
-        print(f"Epoch: {epoch} - Val SRC CLS accuracy: {...}")
+        #Output the accuracy
+        val_acc = correct / num_predictions
+        val_loss = val_loss / args.test_batches
+        print("Epoch: {} - Validation source accuracy (recognition): {}".format(epoch, val_acc))
 
-    del img_rgb, img_depth, img_label_source
+    del img_rgb, img_depth, img_label_source, feat_rgb, feat_depth, preds
 
-    # TODO: log accuracy and loss
-    writer.add_scalar("Loss/train", ..., epoch)
-    writer.add_scalar("Loss/val", ..., epoch)
-    writer.add_scalar("Accuracy/val", ..., epoch)
+    #Log accuracy and loss
+    writer.add_scalar("Loss/train", loss_rec.item(), epoch)
+    writer.add_scalar("Loss/val", val_loss, epoch)
+    writer.add_scalar("Accuracy/val", val_acc, epoch)
 
     # Relative Rotation
     if args.weight_rot > 0.0:
 
         # Rotation - source
-        cf_matrix = np.zeros((4, 4))
         actual_test_batches = min(len(rot_test_source_loader), args.test_batches or len(rot_test_source_loader))
         with EvaluationManager(net_list), tqdm(total=actual_test_batches, desc="TestRtS") as pb:
             rot_test_source_loader_iter = iter(rot_test_source_loader)
-
+            correct = 0.0
+            num_predictions = 0.0
+            # val_loss_rot = 0.0
             for num_val_batch, (img_rgb, img_depth, _, rot_label) in enumerate(rot_test_source_loader_iter):
                 if num_val_batch >= args.test_batches and args.test_batches > 0:
                     break
+                img_rgb, img_depth, rot_label = map_to_device(device, (img_rgb, img_depth, rot_label))
 
-                # TODO: very similar to the previous part
+                # Compute features (without pooling)
+                _, pooled_rgb = netG_rgb(img_rgb)
+                _, pooled_depth = netG_depth(img_depth)
+                # Compute predictions
+                preds = netF_rot(torch.cat((pooled_rgb, pooled_depth), 1))
+
+                # val_loss_rot += ce_loss(preds, rot_label).item()
+                correct += (torch.argmax(preds, dim=1) == rot_label).sum().item()
+                num_predictions += preds.shape[0]
 
                 pb.update(1)
 
-            del img_rgb, img_depth, rot_label
+            del img_rgb, img_depth, rot_label, preds
 
-            # TODO
-            print(f"Epoch: {epoch} - Val SRC ROT accuracy: {...}")
+            rot_val_acc = correct / num_predictions
+            # val_loss_rot = val_loss_rot / args.test_batches
+            print("Epoch: {} - Validation source rotation accuracy: {}".format(epoch, rot_val_acc))
 
         # Rotation - target
         actual_test_batches = min(len(rot_test_target_loader), args.test_batches or len(rot_test_target_loader))
         with EvaluationManager(net_list), tqdm(total=actual_test_batches, desc="TestRtT") as pb:
             rot_test_target_loader_iter = iter(rot_test_target_loader)
-
+            correct = 0.0
+            val_loss_rot = 0.0
+            num_predictions = 0.0
             for num_val_batch, (img_rgb, img_depth, _, rot_label) in enumerate(rot_test_target_loader_iter):
                 if num_val_batch >= args.test_batches and args.test_batches > 0:
                     break
 
-                # TODO: very similar to the previous part
+                img_rgb, img_depth, rot_label = map_to_device(device, (img_rgb, img_depth, rot_label))
+
+                # Compute features (without pooling)
+                _, pooled_rgb = netG_rgb(img_rgb)
+                _, pooled_depth = netG_depth(img_depth)
+                # Compute predictions
+                preds = netF_rot(torch.cat((pooled_rgb, pooled_depth), 1))
+
+                val_loss_rot += ce_loss(preds, rot_label).item()
+                correct += (torch.argmax(preds, dim=1) == rot_label).sum().item()
+                num_predictions += preds.shape[0]
 
                 pb.update(1)
 
-            # TODO
-            print(f"Epoch: {epoch} - Val TRG ROT accuracy: {...}")
+            rot_val_acc = correct / num_predictions
+            val_loss_rot = val_loss_rot / args.test_batches
+            print("Epoch: {} - Validation target rotation accuracy: {}".format(epoch, rot_val_acc))
 
-        del img_rgb, img_depth, rot_label
+        del img_rgb, img_depth, rot_label, preds
 
-        # TODO
-        writer.add_scalar("Loss/rot", ..., epoch)
-        writer.add_scalar("Loss/rot_val", ..., epoch)
-        writer.add_scalar("Accuracy/rot_val", ..., epoch)
+        writer.add_scalar("Loss/rot", loss_rot, epoch)
+        writer.add_scalar("Loss/rot_val", val_loss_rot, epoch)
+        writer.add_scalar("Accuracy/rot_val", rot_val_acc, epoch)
 
     # Classification - target
     with EvaluationManager(net_list), tqdm(total=len(test_loader_target), desc="TestClT") as pb:
         # Test target
-
-        for num_batch, (img_rgb, img_depth, img_label_source) in enumerate(test_loader_target):
+        test_loader_target_iter = iter(test_loader_target)
+        correct = 0.0
+        num_predictions = 0.0
+        val_loss = 0.0
+        for num_batch, (img_rgb, img_depth, img_label_target) in enumerate(test_loader_target_iter):
             # Compute source features
-            img_rgb, img_depth, img_label_source = map_to_device(device, (img_rgb, img_depth, img_label_source))
+            img_rgb, img_depth, img_label_target = map_to_device(device, (img_rgb, img_depth, img_label_source))
+            feat_rgb, _ = netG_rgb(img_rgb)
+            feat_depth, _ = netG_depth(img_depth)
+            features_source = torch.cat((feat_rgb, feat_depth), 1)
 
-            # TODO: very similar to the previous part
+            # Compute predictions
+            preds = netF(features_source)
+
+            val_loss += ce_loss(preds, img_label_target).item()
+            correct += (torch.argmax(preds, dim=1) == img_label_target).sum().item()
+            num_predictions += preds.shape[0]
 
             pb.update(1)
 
-        # TODO: Output accuracy
-        print(f"Epoch: {epoch} - Val TRG CLS accuracy: {...}")
+        #Output accuracy
+        val_acc = correct / num_predictions
+        val_loss = val_loss / args.test_batches
+        print("Epoch: {} - Val Target classification accuracy: {}".format(epoch, val_acc))
 
-    del img_rgb, img_depth, img_label_source
+    del img_rgb, img_depth, img_label_target, feat_rgb, feat_depth, preds
 
-    # TODO: log loss and accuracy
-    writer.add_scalar("Loss/train_target", ..., epoch)
-    writer.add_scalar("Loss/val_target", ..., epoch)
-    writer.add_scalar("Accuracy/val_target", ..., epoch)
+    # Log loss and accuracy
+    writer.add_scalar("Loss/val_target", val_loss, epoch)
+    writer.add_scalar("Accuracy/val_target", val_acc, epoch)
 
     # Save checkpoint
     save_checkpoint(checkpoint_path, epoch, net_list, optims_list)
