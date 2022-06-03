@@ -21,27 +21,31 @@ def load_image(path):
 
 def make_sync_dataset(root, label, ds_name='synROD'):
     images = []
-    labeltxt = open(label)
-    for line in labeltxt:
-        data = line.strip().split(' ')
-        if not is_image_file(data[0]):
-            continue
-        path = os.path.join(root, data[0])
 
-        if ds_name == 'synROD' or ds_name in ['synHB', 'valHB']:
-            path_rgb = path.replace('***', 'rgb')
-            path_depth = path.replace('***', 'depth')
-        elif ds_name == 'ROD':
-            path_rgb = path.replace('***', 'crop')
-            path_rgb = path_rgb.replace('???', 'rgb')
-            path_depth = path.replace('***', 'depthcrop')
-            path_depth = path_depth.replace('???', 'surfnorm')
-        else:
-            raise ValueError('Unknown dataset {}. Known datasets are synROD, synHB, ROD, valHB'.format(ds_name))
-        gt = int(data[1])
-        item = (path_rgb, path_depth, gt)
-        images.append(item)
-    return images
+    with open(label, 'r') as labeltxt:
+        for line in labeltxt:
+            data = line.strip().split(' ')
+            if not is_image_file(data[0]):
+                continue
+            if ds_name == 'ROD':
+                path = os.path.join(root, '???-washington', data[0])
+            else:
+                path = os.path.join(root, data[0])
+
+            if ds_name == 'synROD':
+                path_rgb = path.replace('***', 'rgb')
+                path_depth = path.replace('***', 'depth')
+            elif ds_name == 'ROD':
+                path_rgb = path.replace('***', 'crop')
+                path_rgb = path_rgb.replace('???', 'rgb')
+                path_depth = path.replace('***', 'depthcrop')
+                path_depth = path_depth.replace('???', 'surfnorm')
+            else:
+                raise ValueError('Unknown dataset {}. Known datasets are synROD, ROD'.format(ds_name))
+            gt = int(data[1])
+            item = (path_rgb, path_depth, gt)
+            images.append(item)
+        return images
 
 
 def get_relative_rotation(rgb_rot, depth_rot):
@@ -85,22 +89,20 @@ class DatasetGeneratorMultimodal(Dataset):
         path_rgb, path_depth, target = self.imgs[index]
         img_rgb = load_image(path_rgb)
         img_depth = load_image(path_depth)
-        rot_rgb = None
-        rot_depth = None
 
+        rot_rgb = random.choice([0, 1, 2, 3]) if self.do_rot else None;
+        rot_depth = random.choice([0, 1, 2, 3]) if self.do_rot else None;
+            
         # If a custom transform is specified apply that transform
         if self.transform is not None:
-            img_rgb = self.transform(img_rgb)
-            img_depth = self.transform(img_depth)
+            img_rgb = self.transform(img_rgb, rot_rgb)
+            img_depth = self.transform(img_depth, rot_depth)
         else:  # Otherwise define a random one (random cropping, random horizontal flip)
             top = random.randint(0, 256 - 224)
             left = random.randint(0, 256 - 224)
             flip = random.choice([True, False])
-            if self.do_rot:
-                rot_rgb = random.choice([0, 1, 2, 3])
-                rot_depth = random.choice([0, 1, 2, 3])
-
             transform = MyTransformer([top, left], flip)
+            
             # Apply the same transform to both modalities, rotating them if required
             img_rgb = transform(img_rgb, rot_rgb)
             img_depth = transform(img_depth, rot_depth)
