@@ -19,25 +19,20 @@ args = parser.parse_args()
 
 # Run name
 hp_list = [
-    # Task
-    'rgbd-rr',
-    # Backbone. For these experiments we only use ResNet18
-    'resnet18',
-    # Number of epochs
-    args.epochs,
-    # Learning rate
-    args.lr,
-    # Learning rate multiplier for the non-pretrained parts of the network
-    args.lr_mult,
-    # Batch size
-    args.batch_size,
-    # Trade-off weight for the rotation classifier loss
-    args.weight_rot,
-    # Trade-off weight for the entropy regularization loss
-    args.weight_ent
+    'rgbd-rr',          # Task
+    'resnet18',         # Backbone. For these experiments we only use ResNet18
+    args.epochs,        # Number of epochs
+    args.lr,            # Learning rate
+    args.lr_mult,       # Learning rate multiplier for the non-pretrained parts of the network,
+    args.batch_size,    # Batch size
+    args.weight_rot,    # Trade-off weight for the rotation classifier loss
+    args.weight_ent     # Trade-off weight for the entropy regularization loss
 ]
+
 if args.suffix is not None:
     hp_list.append(args.suffix)
+
+# Map hyperparameters to string
 hp_string = '_'.join(map(str, hp_list))
 print(f"Run: {hp_string}")
 
@@ -392,6 +387,8 @@ for epoch in range(first_epoch, args.epochs + 1):
         writer.add_scalar("Loss/rot_val", val_loss_rot, epoch)
         writer.add_scalar("Accuracy/rot_val", rot_val_acc, epoch)
 
+    # ========================= EVALUAION =========================
+
     # Classification - target
     with EvaluationManager(net_list), tqdm(total=len(test_loader_target), desc="TestClT") as pb:
         # Test target
@@ -401,13 +398,13 @@ for epoch in range(first_epoch, args.epochs + 1):
         val_loss = 0.0
         for num_batch, (img_rgb, img_depth, img_label_target) in enumerate(test_loader_target_iter):
             # Compute source features
-            img_rgb, img_depth, img_label_target = map_to_device(device, (img_rgb, img_depth, img_label_source))
+            img_rgb, img_depth, img_label_target = map_to_device(device, (img_rgb, img_depth, img_label_target))
             feat_rgb, _ = netG_rgb(img_rgb)
             feat_depth, _ = netG_depth(img_depth)
-            features_source = torch.cat((feat_rgb, feat_depth), 1)
+            features_target = torch.cat((feat_rgb, feat_depth), 1)
 
             # Compute predictions
-            preds = netF(features_source)
+            preds = netF(features_target)
 
             val_loss += ce_loss(preds, img_label_target).item()
             correct += (torch.argmax(preds, dim=1) == img_label_target).sum().item()

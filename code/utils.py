@@ -184,7 +184,7 @@ def save_checkpoint(path: Text,
         modules = [modules]
     if isinstance(optimizers, opt.Optimizer):
         optimizers = [optimizers]
-
+ 
     # Data dictionary to be saved
     data = {
         'epoch': epoch,
