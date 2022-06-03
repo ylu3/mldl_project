@@ -1,13 +1,22 @@
 import argparse
 import functools
-import platform
-import warnings
+import os.path
+import time
+from datetime import datetime
+from typing import Sequence, Text, Union
 
 import torch
+import torch.nn as nn
+import torch.optim as opt
 import torch.nn.functional as F
 
 
 def weights_init(m):
+    """
+    This is the same weight initializer used for the paper
+    :param m:
+    :return:
+    """
     classname = m.__class__.__name__
     if classname.find('Conv2d') != -1:
         torch.nn.init.xavier_uniform_(m.weight)
@@ -21,6 +30,11 @@ def weights_init(m):
 
 
 def entropy_loss(logits):
+    """
+    Domain Adaptation-specific Regularization loss
+    :param logits:
+    :return:
+    """
     p_softmax = F.softmax(logits, dim=1)
     mask = p_softmax.ge(0.000001)  # greater or equal to
     mask_out = torch.masked_select(p_softmax, mask)
@@ -30,7 +44,7 @@ def entropy_loss(logits):
 
 class OptimizerManager:
     def __init__(self, optims):
-        self.optims = optims  # if isinstance(optims, Iterable) else [optims]
+        self.optims = optims
 
     def __enter__(self):
         for op in self.optims:
@@ -52,7 +66,7 @@ class EvaluationManager:
 
     def __enter__(self):
         self.prev = torch.is_grad_enabled()
-        torch._C.set_grad_enabled(False)
+        torch.set_grad_enabled(False)
         for net in self.nets:
             net.eval()
 
@@ -89,95 +103,162 @@ class IteratorWrapper:
 
 
 def add_base_args(parser: argparse.ArgumentParser):
+    """
+    Add arguments which are not specific for the DA method. If you implement several versions of train.py you can
+    import this function
+    :param parser:
+    :return:
+    """
     # Dataset arguments
-    parser.add_argument('--target', default='ROD', choices=['ROD', 'valHB'])
-    parser.add_argument('--source', default='synROD', choices=['synROD', 'synHB'])
-    parser.add_argument("--data_root_source", default=None)
-    parser.add_argument("--data_root_target", default=None)
-    parser.add_argument("--train_file_source", default=None)
-    parser.add_argument("--test_file_source", default=None)
-    parser.add_argument("--train_file_target", default=None)
-    parser.add_argument("--test_file_target", default=None)
-    parser.add_argument("--class_num", default=51)
+    parser.add_argument("--data_root")
 
-    parser.add_argument("--task", default="rgbd-rr")
-    parser.add_argument("--num_workers", default=4, type=int)
-    parser.add_argument("--snapshot", default="snapshot/")
-    parser.add_argument("--tensorboard", default="tensorboard")
-    parser.add_argument('--gpu', default=0)
-    parser.add_argument('--suffix', default="")
+    parser.add_argument("--num_workers", default=4, type=int, help="Number of workers for each DataLoader")
+    parser.add_argument("--logdir", default="experiments", help="Directory for checkpoints and TensorBoard logs")
+    parser.add_argument('--gpu', default=0, help="Which CUDA device to use")
+    parser.add_argument('--suffix', type=str, default=None, help="Suffix for your run name")
 
     # hyper-params
-    parser.add_argument("--net", default="resnet18")
-    parser.add_argument("--epoch", default=40, type=int)
-    parser.add_argument("--lr", default=0.0001, type=float)
-    parser.add_argument("--lr_mult", default=1.0, type=float)
-    parser.add_argument("--batch_size", default=32, type=int)
-    parser.add_argument("--weight_decay", default=0.05, type=float)
-    parser.add_argument("--dropout_p", default=0.5)
+    parser.add_argument("--epochs", default=40, type=int, help="Number of epochs")
+    parser.add_argument("--lr", default=0.0001, type=float, help="Learning rate")
+    parser.add_argument("--lr_mult", default=1.0, type=float, help="Learning rate multiplier for non-pretrained layers")
+    parser.add_argument("--batch_size", default=32, type=int, help="Batch size")
+    parser.add_argument("--weight_decay", default=0.05, type=float, help="Weight decay regularization")
+    parser.add_argument("--dropout_p", default=0.5, help="Dropout (not for the backbone!)")
 
-    parser.add_argument("--weight_rot", default=1.0, type=float)
-    parser.add_argument('--weight_ent', default=0.1, type=float)
-
-
-def default_paths(args):
-    print("{} -> {}".format(args.source, args.target))
-    data_root_source, data_root_target, split_source_train, split_source_test, split_target = make_paths(
-        source=args.source, target=args.target)
-    args.data_root_source = args.data_root_source or data_root_source
-    args.data_root_target = args.data_root_target or data_root_target
-    args.train_file_source = args.train_file_source or split_source_train
-    args.test_file_source = args.test_file_source or split_source_test
-    args.train_file_target = args.train_file_target or split_target
-    args.test_file_target = args.test_file_target or split_target
+    parser.add_argument('--test_batches', default=100, type=int,
+                        help="Number of batches to be considered at test time for source classification and the" 
+                             " rotation task. Note that the evaluation on target is always done on all batches")
+    parser.add_argument('--resume', action='store_true', help="Resume from checkpoint if it exists")
 
 
-def make_paths(source='synROD', target='ROD'):
-    node = platform.node()
-
-    data_root_source, data_root_target, split_source_train, split_source_test, split_target = None, None, None, None, \
-                                                                                              None
-
-    # Machine-dependent default paths
-    """
-    if node == 'machine-name':
-        print("Setting default paths for {}".format(node))
-        if source == 'synROD':
-            data_root_source = ''
-            split_source_train = ''
-            split_source_test = ''
-        elif source == 'synHB':
-            data_root_source = ''
-            split_source_train = ''
-            split_source_test = ''
-
-        if target == 'ROD':
-            data_root_target = ''
-            split_target = ''
-        elif target == 'valHB':
-            data_root_target = ''
-            split_target = ''
-    """
-
-    if None in [data_root_source, data_root_target, split_source_train, split_source_test, split_target]:
-        if source == 'synROD':
-            data_root_source = './datasets/synROD/synARID_crops_square'
-            split_source_train = './datasets/synROD/synARID_crops_square/synARID_50k-split_sync_train1.txt'
-            split_source_test = './datasets/synROD/synARID_crops_square/synARID_50k-split_sync_test1.txt'
-        elif source == 'synHB':
-            data_root_source = './datasets/HB/HB_Syn_crops_square'
-            split_source_train = './datasets/HB/HB_Syn_crops_square/HB_Syn_crops_25k-split_sync_train1.txt'
-            split_source_test = './datasets/HB/HB_Syn_crops_square/HB_Syn_crops_25k-split_sync_test1.txt'
-
-        if target == 'ROD':
-            data_root_target = './datasets/ROD'
-            split_target = './datasets/ROD/wrgbd_40k-split_sync.txt'
-        elif target == 'valHB':
-            data_root_target = './datasets/HB/HB_val_crops_square'
-            split_target = './datasets/HB/HB_val_crops_square/HB_val_crops_25k-split_sync.txt'
+def make_paths(root):
+    data_root_source = os.path.join(root, 'synROD')
+    data_root_target = os.path.join(root, 'ROD')
+    split_source_train = os.path.join(data_root_source, 'synARID_50k-split_sync_train1.txt')
+    split_source_test = os.path.join(data_root_source, 'synARID_50k-split_sync_test1.txt')
+    split_target = os.path.join(data_root_target, 'wrgbd_40k-split_sync.txt')
 
     return data_root_source, data_root_target, split_source_train, split_source_test, split_target
 
 
-def map_to_device(device, t):
+def map_to_device(device: torch.device, t: Sequence):
+    """
+    Just a simple util function to move several tensors to a device in a single line
+    :param device:
+        The device
+    :param t:
+        A tuple or iterable of tensors (or any other moveable thing)
+    :return:
+        Moved tuple
+    """
     return tuple(map(lambda x: x.to(device), t))
+
+
+def save_checkpoint(path: Text,
+                    epoch: int,
+                    modules: Union[nn.Module, Sequence[nn.Module]],
+                    optimizers: Union[opt.Optimizer, Sequence[opt.Optimizer]],
+                    safe_replacement: bool = True):
+    """
+    Save a checkpoint of the current state of the training, so it can be resumed.
+    This checkpointing function assumes that there are no learning rate schedulers or gradient scalers for automatic
+    mixed precision.
+    :param path:
+        Path for your checkpoint file
+    :param epoch:
+        Current (completed) epoch
+    :param modules:
+        nn.Module containing the model or a list of nn.Module objects
+    :param optimizers:
+        Optimizer or list of optimizers
+    :param safe_replacement:
+        Keep old checkpoint until the new one has been completed
+    :return:
+    """
+
+    # This function can be called both as
+    # save_checkpoint('/my/checkpoint/path.pth', my_epoch, my_module, my_opt)
+    # or
+    # save_checkpoint('/my/checkpoint/path.pth', my_epoch, [my_module1, my_module2], [my_opt1, my_opt2])
+    if isinstance(modules, nn.Module):
+        modules = [modules]
+    if isinstance(optimizers, opt.Optimizer):
+        optimizers = [optimizers]
+
+    # Data dictionary to be saved
+    data = {
+        'epoch': epoch,
+        # Current time (UNIX timestamp)
+        'time': time.time(),
+        # State dict for all the modules
+        'modules': [m.state_dict() for m in modules],
+        # State dict for all the optimizers
+        'optimizers': [o.state_dict() for o in optimizers]
+    }
+
+    # Safe replacement of old checkpoint
+    temp_file = None
+    if os.path.exists(path) and safe_replacement:
+        # There's an old checkpoint. Rename it!
+        temp_file = path + '.old'
+        os.rename(path, temp_file)
+
+    # Save the new checkpoint
+    with open(path, 'wb') as fp:
+        torch.save(data, fp)
+        # Flush and sync the FS
+        fp.flush()
+        os.fsync(fp.fileno())
+
+    # Remove the old checkpoint
+    if temp_file is not None:
+        os.unlink(path + '.old')
+
+
+def load_checkpoint(path: Text,
+                    default_epoch: int,
+                    modules: Union[nn.Module, Sequence[nn.Module]],
+                    optimizers: Union[opt.Optimizer, Sequence[opt.Optimizer]],
+                    verbose: bool = True):
+    """
+    Try to load a checkpoint to resume the training.
+    :param path:
+        Path for your checkpoint file
+    :param default_epoch:
+        Initial value for "epoch" (in case there are not snapshots)
+    :param modules:
+        nn.Module containing the model or a list of nn.Module objects. They are assumed to stay on the same device
+    :param optimizers:
+        Optimizer or list of optimizers
+    :param verbose:
+        Verbose mode
+    :return:
+        Next epoch
+    """
+    if isinstance(modules, nn.Module):
+        modules = [modules]
+    if isinstance(optimizers, opt.Optimizer):
+        optimizers = [optimizers]
+
+    # If there's a checkpoint
+    if os.path.exists(path):
+        # Load data
+        data = torch.load(path, map_location=next(modules[0].parameters()).device)
+
+        # Inform the user that we are loading the checkpoint
+        if verbose:
+            print(f"Loaded checkpoint saved at {datetime.fromtimestamp(data['time']).strftime('%Y-%m-%d %H:%M:%S')}. "
+                  f"Resuming from epoch {data['epoch']}")
+
+        # Load state for all the modules
+        for i, m in enumerate(modules):
+            modules[i].load_state_dict(data['modules'][i])
+
+        # Load state for all the optimizers
+        for i, o in enumerate(optimizers):
+            optimizers[i].load_state_dict(data['optimizers'][i])
+
+        # Next epoch
+        return data['epoch'] + 1
+    else:
+        return default_epoch
