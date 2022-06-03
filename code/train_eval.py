@@ -202,6 +202,7 @@ for epoch in range(first_epoch, args.epochs + 1):
     with tqdm(total=len(train_loader_source), desc="Training: ") as pb:
         correct = 0.0
         num_predictions = 0.0
+        train_loss = 0
         for batch_num, (img_rgb, img_depth, img_label_source) in enumerate(train_loader_source_rec_iter):
             # The optimization step is performed by OptimizerManager
             with OptimizerManager(optims_list):
@@ -220,11 +221,12 @@ for epoch in range(first_epoch, args.epochs + 1):
 
                 # Classification los
                 train_loss_cls = ce_loss(logits, img_label_source)
+                train_loss += train_loss_cls
                 correct += (torch.argmax(logits, dim=1) == img_label_source).sum().item()
                 num_predictions += logits.shape[0]
 
                 if args.sanitycheck:
-                    print("Sanity check - Training loss (Classification): {} on {} classes.".format(train_loss_cls, classnumber))
+                    print("Sanity check - Training loss (Classification): {} on {} classes.".format(train_loss/num_predictions, classnumber))
 
                 # Entropy loss
                 if args.weight_ent > 0.:
