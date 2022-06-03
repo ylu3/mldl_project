@@ -14,4 +14,4 @@ def extract_dataset(topK, input, ouput):
 
 extract_dataset(topK, 'ROD/wrgbd_40k-split_sync.txt', 'smalldatasets/smallROD.txt')
 extract_dataset(topK, 'synROD/synARID_50k-split_sync_train1.txt', 'smalldatasets/smallsynROD_train.txt')
-extract_dataset(topK, 'synROD/synARID_50k-split_sync_test1.txt', 'smalldatasets/smalltsynROD_test.txt')
+extract_dataset(topK, 'synROD/synARID_50k-split_sync_test1.txt', 'smalldatasets/smallsynROD_test.txt')
