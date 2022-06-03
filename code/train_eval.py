@@ -226,7 +226,7 @@ for epoch in range(first_epoch, args.epochs + 1):
                 num_predictions += logits.shape[0]
 
                 if args.sanitycheck:
-                    print("Sanity check - Training loss (Classification): {} on {} classes.".format(train_loss/num_predictions, classnumber))
+                    print("Sanity check - Training loss (Classification): {} on {} classes.".format(train_loss/(batch_num + 1), classnumber))
 
                 # Entropy loss
                 if args.weight_ent > 0.:
