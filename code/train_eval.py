@@ -289,9 +289,9 @@ for epoch in range(first_epoch, args.epochs + 1):
                     del img_rgb, img_depth, rot_label, pooled_rgb, pooled_depth, logits_rot, loss
 
                 pb.update(1)
-                #Output accuracy
-                train_acc = correct / num_predictions
-                print("Epoch: {} - Training accuracy (Classification): {}".format(epoch, train_acc))
+        #Output accuracy
+        train_acc = correct / num_predictions
+        print("Epoch: {} - Training accuracy (Classification): {}".format(epoch, train_acc))
 
     # ========================= VALIDATION =========================
 
