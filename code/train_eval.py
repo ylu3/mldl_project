@@ -60,19 +60,25 @@ data_root_source, data_root_target, split_source_train, split_source_test, split
 
 # Source: training set
 train_set_source = DatasetGeneratorMultimodal(data_root_source, split_source_train, do_rot=False)
+
 # Source: test set
 test_set_source = DatasetGeneratorMultimodal(data_root_source, split_source_test, do_rot=False,
                                              transform=test_transform)
+
 # Target: training set (for entropy)
 train_set_target = DatasetGeneratorMultimodal(data_root_target, split_target, ds_name='ROD',
                                               do_rot=False)
+
 # Target: test set
 test_set_target = DatasetGeneratorMultimodal(data_root_target, split_target, ds_name='ROD', do_rot=False,
                                              transform=test_transform)
+
 # Source: training set (for relative rotation)
 rot_set_source = DatasetGeneratorMultimodal(data_root_source, split_source_train, do_rot=True)
+
 # Source: test set (for relative rotation)
 rot_test_set_source = DatasetGeneratorMultimodal(data_root_source, split_source_test, do_rot=True)
+
 # Target: training and test set (for relative rotation)
 rot_set_target = DatasetGeneratorMultimodal(data_root_target, split_target, ds_name='ROD',
                                             do_rot=True)
@@ -186,7 +192,7 @@ for epoch in range(first_epoch, args.epochs + 1):
     rot_target_loader_iter = IteratorWrapper(rot_target_loader)
 
     # Training loop. The tqdm thing is to show progress bar
-    with tqdm(total=len(train_loader_source), desc="Train  ") as pb:
+    with tqdm(total=len(train_loader_source), desc="Training: ") as pb:
         for batch_num, (img_rgb, img_depth, img_label_source) in enumerate(train_loader_source_rec_iter):
             # The optimization step is performed by OptimizerManager
             with OptimizerManager(optims_list):
@@ -204,7 +210,7 @@ for epoch in range(first_epoch, args.epochs + 1):
                 logits = netF(features_source)
 
                 # Classification los
-                loss_rec = ce_loss(logits, img_label_source)
+                train_loss_cls = ce_loss(logits, img_label_source)
 
                 # Entropy loss
                 if args.weight_ent > 0.:
@@ -222,7 +228,7 @@ for epoch in range(first_epoch, args.epochs + 1):
                     loss_ent = 0
 
                 # Backpropagate
-                loss = loss_rec + args.weight_ent * loss_ent # compute the total loss before backpropagating
+                loss = train_loss_cls + args.weight_ent * loss_ent # compute the total loss before backpropagating
                 loss.backward()
 
                 del img_rgb, img_depth, img_label_source
@@ -245,12 +251,12 @@ for epoch in range(first_epoch, args.epochs + 1):
                     logits_rot = netF_rot(torch.cat((pooled_rgb, pooled_depth), 1))
 
                     # Classification loss for the rleative rotation task
-                    loss_rot = ce_loss(logits_rot, rot_label)
-                    loss = args.weight_rot * loss_rot # compute the total loss
+                    loss_train_rot = ce_loss(logits_rot, rot_label)
+                    loss = args.weight_rot * loss_train_rot # compute the total loss
 
                     # Backpropagate
                     loss.backward()
-                    loss_rot = loss_rot.item()
+                    loss_train_rot = loss_train_rot.item()
 
                     del img_rgb, img_depth, rot_label, pooled_rgb, pooled_depth, logits_rot, loss
                     """
@@ -279,11 +285,11 @@ for epoch in range(first_epoch, args.epochs + 1):
 
     # Classification - source
     actual_test_batches = min(len(test_loader_source), args.test_batches or len(test_loader_source))
-    with EvaluationManager(net_list), tqdm(total=actual_test_batches, desc="TestClS") as pb:
+    with EvaluationManager(net_list), tqdm(total=actual_test_batches, desc="Validation Classification: ") as pb:
         test_source_loader_iter = iter(test_loader_source)
         correct = 0.0
         num_predictions = 0.0
-        val_loss = 0.0
+        val_loss_cls = 0.0
         for num_batch, (img_rgb, img_depth, img_label_source) in enumerate(test_source_loader_iter):
             # By default validate only on 100 batches
             if num_batch >= args.test_batches and args.test_batches > 0:
@@ -301,34 +307,34 @@ for epoch in range(first_epoch, args.epochs + 1):
             # Compute predictions
             preds = netF(features_source)
 
-            val_loss += ce_loss(preds, img_label_source).item()
+            val_loss_cls += ce_loss(preds, img_label_source).item()
             correct += (torch.argmax(preds, dim=1) == img_label_source).sum().item()
             num_predictions += preds.shape[0]
 
             pb.update(1)
 
         #Output the accuracy
-        val_acc = correct / num_predictions
-        val_loss = val_loss / args.test_batches
-        print("Epoch: {} - Validation source accuracy (recognition): {}".format(epoch, val_acc))
+        val_acc_cls = correct / num_predictions
+        val_loss_cls_per_batch = val_loss_cls / args.test_batches
+        print("Epoch: {} - Validation source accuracy (Classification): {}".format(epoch, val_acc))
 
     del img_rgb, img_depth, img_label_source, feat_rgb, feat_depth, preds
 
     #Log accuracy and loss
-    writer.add_scalar("Loss/train", loss_rec.item(), epoch)
-    writer.add_scalar("Loss/val", val_loss, epoch)
-    writer.add_scalar("Accuracy/val", val_acc, epoch)
+    writer.add_scalar("Loss/train_cls", train_loss_cls.item(), epoch) # train loss after epoch i
+    writer.add_scalar("Loss/val_per_batch", val_loss_cls_per_batch, epoch) # validation loss per batch after epoch i
+    writer.add_scalar("Accuracy/val_cls", val_acc_cls, epoch)
 
     # Relative Rotation
     if args.weight_rot > 0.0:
 
         # Rotation - source
         actual_test_batches = min(len(rot_test_source_loader), args.test_batches or len(rot_test_source_loader))
-        with EvaluationManager(net_list), tqdm(total=actual_test_batches, desc="TestRtS") as pb:
+        with EvaluationManager(net_list), tqdm(total=actual_test_batches, desc="Validation Source Rotaion: ") as pb:
             rot_test_source_loader_iter = iter(rot_test_source_loader)
             correct = 0.0
             num_predictions = 0.0
-            # val_loss_rot = 0.0
+            val_loss_rot_source = 0.0
             for num_val_batch, (img_rgb, img_depth, _, rot_label) in enumerate(rot_test_source_loader_iter):
                 if num_val_batch >= args.test_batches and args.test_batches > 0:
                     break
@@ -340,7 +346,7 @@ for epoch in range(first_epoch, args.epochs + 1):
                 # Compute predictions
                 preds = netF_rot(torch.cat((pooled_rgb, pooled_depth), 1))
 
-                # val_loss_rot += ce_loss(preds, rot_label).item()
+                val_loss_rot_source += ce_loss(preds, rot_label).item()
                 correct += (torch.argmax(preds, dim=1) == rot_label).sum().item()
                 num_predictions += preds.shape[0]
 
@@ -348,16 +354,16 @@ for epoch in range(first_epoch, args.epochs + 1):
 
             del img_rgb, img_depth, rot_label, preds
 
-            rot_val_acc = correct / num_predictions
-            # val_loss_rot = val_loss_rot / args.test_batches
-            print("Epoch: {} - Validation source rotation accuracy: {}".format(epoch, rot_val_acc))
+            rot_val_acc_source = correct / num_predictions
+            val_loss_rot_source_per_batch = val_loss_rot_source / args.test_batches
+            print("Epoch: {} - Validation source rotation accuracy: {}".format(epoch, rot_val_acc_source))
 
         # Rotation - target
         actual_test_batches = min(len(rot_test_target_loader), args.test_batches or len(rot_test_target_loader))
-        with EvaluationManager(net_list), tqdm(total=actual_test_batches, desc="TestRtT") as pb:
+        with EvaluationManager(net_list), tqdm(total=actual_test_batches, desc="Validation Target Rotation: ") as pb:
             rot_test_target_loader_iter = iter(rot_test_target_loader)
             correct = 0.0
-            val_loss_rot = 0.0
+            val_loss_rot_target = 0.0
             num_predictions = 0.0
             for num_val_batch, (img_rgb, img_depth, _, rot_label) in enumerate(rot_test_target_loader_iter):
                 if num_val_batch >= args.test_batches and args.test_batches > 0:
@@ -371,31 +377,33 @@ for epoch in range(first_epoch, args.epochs + 1):
                 # Compute predictions
                 preds = netF_rot(torch.cat((pooled_rgb, pooled_depth), 1))
 
-                val_loss_rot += ce_loss(preds, rot_label).item()
+                val_loss_rot_target += ce_loss(preds, rot_label).item()
                 correct += (torch.argmax(preds, dim=1) == rot_label).sum().item()
                 num_predictions += preds.shape[0]
 
                 pb.update(1)
 
-            rot_val_acc = correct / num_predictions
-            val_loss_rot = val_loss_rot / args.test_batches
-            print("Epoch: {} - Validation target rotation accuracy: {}".format(epoch, rot_val_acc))
+            rot_val_acc_target = correct / num_predictions
+            val_loss_rot_target_per_batch = val_loss_rot_target / args.test_batches
+            print("Epoch: {} - Validation target rotation accuracy: {}".format(epoch, rot_val_acc_target))
 
         del img_rgb, img_depth, rot_label, preds
 
-        writer.add_scalar("Loss/rot", loss_rot, epoch)
-        writer.add_scalar("Loss/rot_val", val_loss_rot, epoch)
-        writer.add_scalar("Accuracy/rot_val", rot_val_acc, epoch)
+        writer.add_scalar("Loss/rot", loss_train_rot, epoch)
+        writer.add_scalar("Loss/rot_val_source_per_batch", val_loss_rot_source_per_batch, epoch)
+        writer.add_scalar("Loss/rot_val_target_per_batch", val_loss_rot_target_per_batch, epoch)
+        writer.add_scalar("Accuracy/rot_val_source", rot_val_acc_source, epoch)
+        writer.add_scalar("Accuracy/rot_val_target", rot_val_acc_target, epoch)
 
     # ========================= EVALUAION =========================
 
     # Classification - target
-    with EvaluationManager(net_list), tqdm(total=len(test_loader_target), desc="TestClT") as pb:
+    with EvaluationManager(net_list), tqdm(total=len(test_loader_target), desc="Evaluation: ") as pb:
         # Test target
         test_loader_target_iter = iter(test_loader_target)
         correct = 0.0
         num_predictions = 0.0
-        val_loss = 0.0
+        eval_loss = 0.0
         for num_batch, (img_rgb, img_depth, img_label_target) in enumerate(test_loader_target_iter):
             # Compute source features
             img_rgb, img_depth, img_label_target = map_to_device(device, (img_rgb, img_depth, img_label_target))
@@ -406,22 +414,22 @@ for epoch in range(first_epoch, args.epochs + 1):
             # Compute predictions
             preds = netF(features_target)
 
-            val_loss += ce_loss(preds, img_label_target).item()
+            eval_loss += ce_loss(preds, img_label_target).item()
             correct += (torch.argmax(preds, dim=1) == img_label_target).sum().item()
             num_predictions += preds.shape[0]
 
             pb.update(1)
 
         #Output accuracy
-        val_acc = correct / num_predictions
-        val_loss = val_loss / args.test_batches
-        print("Epoch: {} - Val Target classification accuracy: {}".format(epoch, val_acc))
+        eval_acc = correct / num_predictions
+        eval_loss_per_batch = eval_loss / args.test_batches
+        print("Epoch: {} - Evaluation Target classification accuracy: {}".format(epoch, eval_acc))
 
     del img_rgb, img_depth, img_label_target, feat_rgb, feat_depth, preds
 
     # Log loss and accuracy
-    writer.add_scalar("Loss/val_target", val_loss, epoch)
-    writer.add_scalar("Accuracy/val_target", val_acc, epoch)
+    writer.add_scalar("Loss/eval_target_per_batch", eval_loss_per_batch, epoch)
+    writer.add_scalar("Accuracy/eval_target", eval_acc, epoch)
 
     # Save checkpoint
     save_checkpoint(checkpoint_path, epoch, net_list, optims_list)
