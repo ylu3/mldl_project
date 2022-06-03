@@ -198,6 +198,8 @@ for epoch in range(first_epoch, args.epochs + 1):
 
     # Training loop. The tqdm thing is to show progress bar
     with tqdm(total=len(train_loader_source), desc="Training: ") as pb:
+        correct = 0.0
+        num_predictions = 0.0
         for batch_num, (img_rgb, img_depth, img_label_source) in enumerate(train_loader_source_rec_iter):
             # The optimization step is performed by OptimizerManager
             with OptimizerManager(optims_list):
@@ -216,6 +218,8 @@ for epoch in range(first_epoch, args.epochs + 1):
 
                 # Classification los
                 train_loss_cls = ce_loss(logits, img_label_source)
+                correct += (torch.argmax(logits, dim=1) == img_label_source).sum().item()
+                num_predictions += logits.shape[0]
 
                 # Entropy loss
                 if args.weight_ent > 0.:
@@ -226,7 +230,7 @@ for epoch in range(first_epoch, args.epochs + 1):
                     feat_rgb, _ = netG_rgb(img_rgb)
                     feat_depth, _ = netG_depth(img_depth)
                     features_target = torch.cat((feat_rgb, feat_depth), 1)
-                    logits = netF(features_target)
+                    logits = netF(features_target)                    
 
                     loss_ent = entropy_loss(logits)
                 else:
@@ -285,6 +289,9 @@ for epoch in range(first_epoch, args.epochs + 1):
                     del img_rgb, img_depth, rot_label, pooled_rgb, pooled_depth, logits_rot, loss
 
                 pb.update(1)
+                #Output accuracy
+                train_acc = correct / num_predictions
+                print("Epoch: {} - Training accuracy (Classification): {}".format(epoch, train_acc))
 
     # ========================= VALIDATION =========================
 
@@ -427,7 +434,7 @@ for epoch in range(first_epoch, args.epochs + 1):
 
         #Output accuracy
         eval_acc = correct / num_predictions
-        eval_loss_per_batch = eval_loss / args.test_batches
+        eval_loss_per_batch = eval_loss / len(test_loader_target)
         print("Epoch: {} - Evaluation Target classification accuracy: {}".format(epoch, eval_acc))
 
     del img_rgb, img_depth, img_label_target, feat_rgb, feat_depth, preds
