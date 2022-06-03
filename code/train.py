@@ -5,7 +5,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 
 from net import ResBase, ResClassifier, RelativeRotationClassifier
-from data_loader import DatasetGeneratorMultimodal, MyTransform, INPUT_RESOLUTION
+from data_loader import DatasetGeneratorMultimodal, MyTransformer, INPUT_RESOLUTION
 from utils import *
 from tqdm import tqdm
 
