@@ -21,12 +21,13 @@ args = parser.parse_args()
 hp_list = [
     'rgbd-rr',          # Task
     'resnet18',         # Backbone. For these experiments we only use ResNet18
-    args.epochs,        # Number of epochs
-    args.lr,            # Learning rate
-    args.lr_mult,       # Learning rate multiplier for the non-pretrained parts of the network,
-    args.batch_size,    # Batch size
-    args.weight_rot,    # Trade-off weight for the rotation classifier loss
-    args.weight_ent     # Trade-off weight for the entropy regularization loss
+    'epoches = '+args.epochs,        # Number of epochs
+    'lr = '+args.lr,            # Learning rate
+    'lr_mult = '+args.lr_mult,       # Learning rate multiplier for the non-pretrained parts of the network,
+    'batch_size = '+args.batch_size,    # Batch size
+    'weight_rot = '+args.weight_rot,    # Trade-off weight for the rotation classifier loss
+    'weight_ent = '+args.weight_ent,     # Trade-off weight for the entropy regularization loss
+    'dataset = ROD-synROD' if not args.smallset else 'dataset = smallset'
 ]
 
 if args.suffix is not None:
