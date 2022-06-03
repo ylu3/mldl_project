@@ -56,7 +56,7 @@ test_transform = MyTransformer([int((256 - INPUT_RESOLUTION) / 2), int((256 - IN
     Prepare datasets
 """
 
-data_root_source, data_root_target, split_source_train, split_source_test, split_target = make_paths(args.data_root)
+data_root_source, data_root_target, split_source_train, split_source_test, split_target = make_paths(args.data_root, args.samllset)
 
 # Source: training set
 train_set_source = DatasetGeneratorMultimodal(data_root_source, split_source_train, do_rot=False)

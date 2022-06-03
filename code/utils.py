@@ -129,15 +129,21 @@ def add_base_args(parser: argparse.ArgumentParser):
                         help="Number of batches to be considered at test time for source classification and the" 
                              " rotation task. Note that the evaluation on target is always done on all batches")
     parser.add_argument('--resume', action='store_true', help="Resume from checkpoint if it exists")
+    parser.add_argument('--samllset', action='store_true', default=False, help="Train on small set")
 
 
-def make_paths(root):
+def make_paths(root, smallset=False):
     data_root_source = os.path.join(root, 'synROD')
     data_root_target = os.path.join(root, 'ROD')
-    split_source_train = os.path.join(data_root_source, 'synARID_50k-split_sync_train1.txt')
-    split_source_test = os.path.join(data_root_source, 'synARID_50k-split_sync_test1.txt')
-    split_target = os.path.join(data_root_target, 'wrgbd_40k-split_sync.txt')
-
+    if smallset:
+        split_source_train = os.path.join(data_root_source, 'smallsynROD_train.txt')
+        split_source_test = os.path.join(data_root_source, 'smallsynROD_test.txt')
+        split_target = os.path.join(data_root_target, 'smallROD.txt')
+    else:
+        split_source_train = os.path.join(data_root_source, 'synARID_50k-split_sync_train1.txt')
+        split_source_test = os.path.join(data_root_source, 'synARID_50k-split_sync_test1.txt')
+        split_target = os.path.join(data_root_target, 'wrgbd_40k-split_sync.txt')
+    
     return data_root_source, data_root_target, split_source_train, split_source_test, split_target
 
 
