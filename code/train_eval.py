@@ -344,7 +344,7 @@ for epoch in range(first_epoch, args.epochs + 1):
 
     #Log accuracy and loss
     writer.add_scalar("Loss/train_cls", train_loss_cls.item(), epoch) # train loss after epoch i
-    writer.add_scalar("Loss/val_per_batch", val_loss_cls_per_batch, epoch) # validation loss per batch after epoch i
+    writer.add_scalar("Loss/val", val_loss_cls_per_batch, epoch) # validation loss per batch after epoch i
     writer.add_scalar("Accuracy/val_cls", val_acc_cls, epoch)
 
     # Relative Rotation
@@ -412,8 +412,8 @@ for epoch in range(first_epoch, args.epochs + 1):
         del img_rgb, img_depth, rot_label, preds
 
         writer.add_scalar("Loss/rot", loss_train_rot, epoch)
-        writer.add_scalar("Loss/rot_val_source_per_batch", val_loss_rot_source_per_batch, epoch)
-        writer.add_scalar("Loss/rot_val_target_per_batch", val_loss_rot_target_per_batch, epoch)
+        writer.add_scalar("Loss/rot_val_source", val_loss_rot_source_per_batch, epoch)
+        writer.add_scalar("Loss/rot_val_target", val_loss_rot_target_per_batch, epoch)
         writer.add_scalar("Accuracy/rot_val_source", rot_val_acc_source, epoch)
         writer.add_scalar("Accuracy/rot_val_target", rot_val_acc_target, epoch)
 
