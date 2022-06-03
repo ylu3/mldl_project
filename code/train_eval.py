@@ -176,7 +176,9 @@ opt_g_depth = optim.SGD(netG_depth.parameters(), lr=args.lr, momentum=0.9, weigh
 opt_f = optim.SGD(netF.parameters(), lr=args.lr * args.lr_mult, momentum=0.9, weight_decay=args.weight_decay)
 opt_f_rot = optim.SGD(netF_rot.parameters(), lr=args.lr * args.lr_mult, momentum=0.9, weight_decay=args.weight_decay)
 
-optims_list = [opt_g_rgb, opt_g_depth, opt_f, opt_f_rot]
+optims_list = []
+if not args.sanitycheck:
+    optims_list = [opt_g_rgb, opt_g_depth, opt_f, opt_f_rot]
 
 first_epoch = 1
 if args.resume:
@@ -221,9 +223,8 @@ for epoch in range(first_epoch, args.epochs + 1):
                 correct += (torch.argmax(logits, dim=1) == img_label_source).sum().item()
                 num_predictions += logits.shape[0]
 
-                if args.sanitycheck and batch_num == 0:
-                    print("Sanity check : Training loss (Classification): {} on {} classes.".format(train_loss_cls, classnumber))
-                    exit(1)
+                if args.sanitycheck:
+                    print("Sanity check - Training loss (Classification): {} on {} classes.".format(train_loss_cls, classnumber))
 
                 # Entropy loss
                 if args.weight_ent > 0.:
