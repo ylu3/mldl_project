@@ -170,6 +170,11 @@ net_list = map_to_device(device, net_list)
 # Classification loss
 ce_loss = nn.CrossEntropyLoss()
 
+# Sanity check
+if args.sanitycheck:
+    args.epochs = 1
+    args.weight_decay = 0
+
 # Optimizers
 opt_g_rgb = optim.SGD(netG_rgb.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.weight_decay)
 opt_g_depth = optim.SGD(netG_depth.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.weight_decay)
@@ -177,15 +182,10 @@ opt_f = optim.SGD(netF.parameters(), lr=args.lr * args.lr_mult, momentum=0.9, we
 opt_f_rot = optim.SGD(netF_rot.parameters(), lr=args.lr * args.lr_mult, momentum=0.9, weight_decay=args.weight_decay)
 
 optims_list = [opt_g_rgb, opt_g_depth, opt_f, opt_f_rot]
-if not args.sanitycheck:
-    optims_list = [opt_g_rgb, opt_g_depth, opt_f, opt_f_rot]
 
 first_epoch = 1
 if args.resume:
     first_epoch = load_checkpoint(checkpoint_path, first_epoch, net_list, optims_list)
-
-if args.sanitycheck:
-    args.epoch = 1
 
 for epoch in range(first_epoch, args.epochs + 1):
     print("Epoch {} / {}".format(epoch, args.epochs))
