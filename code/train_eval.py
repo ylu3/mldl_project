@@ -172,7 +172,6 @@ ce_loss = nn.CrossEntropyLoss()
 
 # Sanity check
 if args.sanitycheck:
-    args.epochs = 1
     args.weight_decay = 0
 
 # Optimizers
