@@ -94,7 +94,7 @@ class DatasetGeneratorMultimodal(Dataset):
         rot_depth = random.choice([0, 1, 2, 3]) if self.do_rot else None;
             
         # If a custom transform is specified apply that transform
-        if self.transform is not None:
+        if self.transform:
             img_rgb = self.transform(img_rgb, rot_rgb)
             img_depth = self.transform(img_depth, rot_depth)
         else:  # Otherwise define a random one (random cropping, random horizontal flip)
