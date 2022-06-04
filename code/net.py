@@ -6,7 +6,7 @@ class ResBase(nn.Module):
     def __init__(self):
         super(ResBase, self).__init__()
         # Initialize pre-trained resnet18
-        model_resnet = models.resnet18(pretrained=False)
+        model_resnet = models.resnet18(pretrained=True)
 
         # "Steal" pretrained layers from the torchvision pretrained Resnet18
         self.conv1 = model_resnet.conv1
