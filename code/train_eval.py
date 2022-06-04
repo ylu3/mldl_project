@@ -271,12 +271,12 @@ for epoch in range(first_epoch, args.epochs + 1):
                     logits_rot = netF_rot(torch.cat((pooled_rgb, pooled_depth), 1))
 
                     # Classification loss for the rleative rotation task
-                    loss_train_rot = ce_loss(logits_rot, rot_label)
-                    loss = args.weight_rot * loss_train_rot # compute the total loss
+                    loss_train_rot_source = ce_loss(logits_rot, rot_label)
+                    loss = args.weight_rot * loss_train_rot_source # compute the total loss
 
                     # Backpropagate
                     loss.backward()
-                    loss_train_rot = loss_train_rot.item()
+                    loss_train_rot_source = loss_train_rot_source.item()
 
                     del img_rgb, img_depth, rot_label, pooled_rgb, pooled_depth, logits_rot, loss
                     """
@@ -293,9 +293,11 @@ for epoch in range(first_epoch, args.epochs + 1):
                     logits_rot = netF_rot(torch.cat((pooled_rgb, pooled_depth), 1))
 
                     # Classification loss for the rleative rotation task
-                    loss = args.weight_rot * ce_loss(logits_rot, rot_label)
+                    loss_train_rot_target = ce_loss(logits_rot, rot_label)
+                    loss = args.weight_rot * loss_train_rot_target
                     # Backpropagate
                     loss.backward()
+                    loss_train_rot_target = loss_train_rot_target.item()
                 
                     del img_rgb, img_depth, rot_label, pooled_rgb, pooled_depth, logits_rot, loss
 
@@ -346,6 +348,7 @@ for epoch in range(first_epoch, args.epochs + 1):
     #Log accuracy and loss
     writer.add_scalar("Loss/train_cls", train_loss_cls.item(), epoch) # train loss after epoch i
     writer.add_scalar("Loss/val_cls", val_loss_cls_per_batch, epoch) # validation loss per batch after epoch i
+    writer.add_scalar("Accuracy/train_cls", train_acc, epoch)
     writer.add_scalar("Accuracy/val_cls", val_acc_cls, epoch)
 
     # Relative Rotation
@@ -412,7 +415,8 @@ for epoch in range(first_epoch, args.epochs + 1):
 
         del img_rgb, img_depth, rot_label, preds
 
-        writer.add_scalar("Loss/rot", loss_train_rot, epoch)
+        writer.add_scalar("Loss/rot_train_source", loss_train_rot_source, epoch)
+        writer.add_scalar("Loss/rot_train_target", loss_train_rot_target, epoch)
         writer.add_scalar("Loss/rot_val_source", val_loss_rot_source_per_batch, epoch)
         writer.add_scalar("Loss/rot_val_target", val_loss_rot_target_per_batch, epoch)
         writer.add_scalar("Accuracy/rot_val_source", rot_val_acc_source, epoch)
