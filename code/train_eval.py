@@ -451,7 +451,7 @@ for epoch in range(first_epoch, args.epochs + 1):
     del img_rgb, img_depth, img_label_target, feat_rgb, feat_depth, preds
 
     # Log loss and accuracy
-    writer.add_scalar("Loss/eval_target_per_batch", eval_loss_per_batch, epoch)
+    writer.add_scalar("Loss/eval_target", eval_loss_per_batch, epoch)
     writer.add_scalar("Accuracy/eval_target", eval_acc, epoch)
 
     # Save checkpoint
