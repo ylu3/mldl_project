@@ -344,7 +344,7 @@ for epoch in range(first_epoch, args.epochs + 1):
 
     #Log accuracy and loss
     writer.add_scalar("Loss/train_cls", train_loss_cls.item(), epoch) # train loss after epoch i
-    writer.add_scalar("Loss/val", val_loss_cls_per_batch, epoch) # validation loss per batch after epoch i
+    writer.add_scalar("Loss/val_cls", val_loss_cls_per_batch, epoch) # validation loss per batch after epoch i
     writer.add_scalar("Accuracy/val_cls", val_acc_cls, epoch)
 
     # Relative Rotation
