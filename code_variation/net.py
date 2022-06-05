@@ -84,9 +84,11 @@ class RelativeRotationClassifier(nn.Module):
         )
         # self.fc2 = nn.Linear(projection_dim, class_num)
         self.fc2 = nn.Sequential(
-            nn.Linear(projection_dim, 10),
+            nn.Linear(self.projection_dim, self.projection_dim),
             nn.ReLU(inplace=True),
-            nn.Linear(10, 1),
+            nn.Linear(self.projection_dim, self.projection_dim),
+            nn.ReLU(inplace=True),
+            nn.Linear(self.projection_dim, 1),
             nn.Sigmoid()
         )
 
