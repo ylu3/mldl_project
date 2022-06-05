@@ -382,10 +382,6 @@ for epoch in range(first_epoch, args.epochs + 1):
 
                 # val_loss_rot_source += ce_loss(preds, rot_label).item()
                 val_loss_rot_source += rotation_loss(preds, rot_label).item()
-                print(preds)
-                print(rot_label)
-                print(rotation_loss(preds, rot_label))
-                print(val_loss_rot_source)
                 # correct += (torch.argmax(preds, dim=1) == rot_label).sum().item()
                 # num_predictions += preds.shape[0]
 
