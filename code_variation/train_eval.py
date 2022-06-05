@@ -300,7 +300,7 @@ for epoch in range(first_epoch, args.epochs + 1):
 
                     # Classification loss for the rleative rotation task
                     # loss_train_rot_target = ce_loss(logits_rot, rot_label)
-                    loss_train_rot_source = rotation_loss(radian_rot, rot_label)
+                    loss_train_rot_target = rotation_loss(radian_rot, rot_label)
                     loss = args.weight_rot * loss_train_rot_target
                     # Backpropagate
                     loss.backward()
@@ -415,7 +415,7 @@ for epoch in range(first_epoch, args.epochs + 1):
                 preds = netF_rot(torch.cat((pooled_rgb, pooled_depth), 1))
 
                 # val_loss_rot_target += ce_loss(preds, rot_label).item()
-                val_loss_rot_source += rotation_loss(preds, rot_label).item()
+                val_loss_rot_target += rotation_loss(preds, rot_label).item()
                 # correct += (torch.argmax(preds, dim=1) == rot_label).sum().item()
                 # num_predictions += preds.shape[0]
 
