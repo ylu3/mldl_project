@@ -19,7 +19,7 @@ args = parser.parse_args()
 
 # Run name
 hp_list = [
-    'rgbd-rr',          # Task
+    'rgbd-rr-variation',          # Task
     'resnet18',         # Backbone. For these experiments we only use ResNet18
     'lr='+str(args.lr),            # Learning rate
     'lr_mult='+str(args.lr_mult),       # Learning rate multiplier for the non-pretrained parts of the network,
