@@ -20,7 +20,7 @@ args = parser.parse_args()
 
 # Run name
 hp_list = [
-    'variation0-safn',
+    'variation-safn',
     'rgbd-rr',          # Task
     'resnet18',         # Backbone. For these experiments we only use ResNet18
     'lr='+str(args.lr),            # Learning rate
