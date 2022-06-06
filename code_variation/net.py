@@ -61,10 +61,12 @@ class ResClassifier(nn.Module):
 
 class RelativeRotationClassifier(nn.Module):
     # def __init__(self, input_dim, projection_dim=100, class_num=4):
-    def __init__(self, input_dim, projection_dim=100):
+    def __init__(self, input_dim, projection_dim=100, tanh=False):
         super(RelativeRotationClassifier, self).__init__()
         self.input_dim = input_dim
         self.projection_dim = projection_dim
+        self.tanh = tanh
+        self.act = nn.Tanh() if tanh else nn.Sigmoid()
 
         self.conv_1x1 = nn.Sequential(
             nn.Conv2d(self.input_dim, self.projection_dim, (1, 1), stride=(1, 1)),
@@ -85,7 +87,7 @@ class RelativeRotationClassifier(nn.Module):
         # self.fc2 = nn.Linear(projection_dim, class_num)
         self.fc2 = nn.Sequential(
             nn.Linear(self.projection_dim, 1),
-            nn.Sigmoid()
+            self.act
         )
 
     def forward(self, x):
@@ -93,5 +95,5 @@ class RelativeRotationClassifier(nn.Module):
         x = self.conv_3x3(x)
         x = x.flatten(start_dim=1)
         x = self.fc1(x)
-        x = self.fc2(x) * 2 * math.pi
+        x = (self.fc(2) + 1) * math.pi if self.tanh else self.fc2(x) * 2 * math.pi
         return x

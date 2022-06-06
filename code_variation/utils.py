@@ -144,6 +144,7 @@ def add_base_args(parser: argparse.ArgumentParser):
     parser.add_argument('--smallset', action='store_true', default=False, help="Train on small set")
     parser.add_argument('--sanitycheck', action='store_true', default=False, help="Check sanity set")
     parser.add_argument("--projection_dim", default=100, type=int, help="Projection dimension in NetRot")
+    parser.add_argument('--tanh', action='store_true', default=False, help="Try tanh as activation")
 
 def make_paths(root, smallset=False):
     data_root_source = os.path.join(root, 'synROD')

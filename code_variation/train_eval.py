@@ -163,7 +163,7 @@ netF.apply(weights_init)
 
 # Pretext task: relative rotation classifier
 # netF_rot = RelativeRotationClassifier(input_dim=input_dim_F * 2, class_num=4)
-netF_rot = RelativeRotationClassifier(input_dim=input_dim_F * 2, projection_dim=args.projection_dim)
+netF_rot = RelativeRotationClassifier(input_dim=input_dim_F * 2, projection_dim=args.projection_dim, tanh=args.tanh)
 netF_rot.apply(weights_init)
 
 # Define a list of the networks. Move everything on the GPU
