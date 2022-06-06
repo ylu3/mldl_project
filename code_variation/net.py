@@ -95,5 +95,5 @@ class RelativeRotationClassifier(nn.Module):
         x = self.conv_3x3(x)
         x = x.flatten(start_dim=1)
         x = self.fc1(x)
-        x = (self.fc(2) + 1) * math.pi if self.tanh else self.fc2(x) * 2 * math.pi
+        x = (self.fc2(x) + 1) * math.pi if self.tanh else self.fc2(x) * 2 * math.pi
         return x
