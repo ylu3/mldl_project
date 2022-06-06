@@ -223,12 +223,12 @@ for epoch in range(first_epoch, args.epochs + 1):
                 """
                 feat_rgb_source, _ = netG_rgb(img_rgb_source)
                 feat_depth_source, _ = netG_depth(img_depth_source)
-                features_source = torch.cat((feat_rgb, feat_depth), 1)
+                features_source = torch.cat((feat_rgb_source, feat_depth_source), 1)
                 fc_source, logits_source = netF(features_source)
 
                 feat_rgb_target, _ = netG_rgb(img_rgb_target)
                 feat_depth_target, _ = netG_depth(img_depth_target)
-                features_target = torch.cat((feat_rgb, feat_depth), 1)
+                features_target = torch.cat((feat_rgb_target, feat_depth_target), 1)
                 fc_target, logits_target = netF(features_source)
 
                 # Classification los
