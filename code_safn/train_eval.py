@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser()
 add_base_args(parser)
 parser.add_argument("--weight_rot", default=1.0, type=float, help="Weight for the rotation loss")
 parser.add_argument('--weight_ent', default=0.1, type=float, help="Weight for the entropy loss")
-parser.add_argument("--weight_l2norm", default=0.01, type=float, help="Weight L2 norm")
+parser.add_argument("--weight_l2norm", default=0.01, type=float, help="Weight L2-norm")
 args = parser.parse_args()
 
 # Run name
@@ -230,7 +230,7 @@ for epoch in range(first_epoch, args.epochs + 1):
                 feat_rgb_target, _ = netG_rgb(img_rgb_target)
                 feat_depth_target, _ = netG_depth(img_depth_target)
                 features_target = torch.cat((feat_rgb_target, feat_depth_target), 1)
-                fc_target, logits_target = netF(features_source)
+                fc_target, logits_target = netF(features_target)
 
                 # Classification los
                 train_loss_cls = ce_loss(logits_source, img_label_source)
@@ -254,9 +254,10 @@ for epoch in range(first_epoch, args.epochs + 1):
                 # Backpropagate
                 loss = train_loss_cls + args.weight_ent * loss_ent + args.weight_l2norm * (l2norm_loss_source + l2norm_loss_target)# compute the total loss before backpropagating
                 loss.backward()
-                print(train_loss_cls)
-                print(args.weight_ent * loss_ent)
-                print(args.weight_l2norm * (l2norm_loss_source + l2norm_loss_target))
+                print(args.weight_l2norm * (l2norm_loss_source + l2norm_loss_target).item())
+                print(l2norm_mean(fc_source).item())
+                print(l2norm_mean(fc_target).item())
+                print()
 
                 del img_rgb_source, img_depth_source, img_label_source, img_rgb_target, img_depth_target
 

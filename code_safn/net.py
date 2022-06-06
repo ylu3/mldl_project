@@ -66,7 +66,6 @@ class ResClassifier(nn.Module):
         if self.training:
             fc2_emb.mul_(math.sqrt(0.5))            
         logit = self.fc3(fc2_emb)
-
         if self.extract:
             return fc2_emb, logit
         return logit
