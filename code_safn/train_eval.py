@@ -254,6 +254,9 @@ for epoch in range(first_epoch, args.epochs + 1):
                 # Backpropagate
                 loss = train_loss_cls + args.weight_ent * loss_ent + args.weight_l2norm * (l2norm_loss_source + l2norm_loss_target)# compute the total loss before backpropagating
                 loss.backward()
+                print(train_loss_cls)
+                print(args.weight_ent * loss_ent)
+                print(args.weight_l2norm * (l2norm_loss_source + l2norm_loss_target))
 
                 del img_rgb_source, img_depth_source, img_label_source, img_rgb_target, img_depth_target
 
