@@ -19,7 +19,8 @@ args = parser.parse_args()
 
 # Run name
 hp_list = [
-    'rgbd-rr-variation'+'(tanh)' if args.tanh else 'rgbd-rr-variation'  # Task
+    'variation(tanh)' if args.tanh else 'variation',
+    'rgbd-rr-',   # Task
     'resnet18',         # Backbone. For these experiments we only use ResNet18
     'lr='+str(args.lr),            # Learning rate
     'lr_mult='+str(args.lr_mult),       # Learning rate multiplier for the non-pretrained parts of the network,
