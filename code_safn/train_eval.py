@@ -30,6 +30,7 @@ hp_list = [
     'weight_decay='+str(args.weight_decay), # Weight Decay in L2 regulation
     'weight_rot='+str(args.weight_rot),    # Trade-off weight for the rotation classifier loss
     'weight_ent='+str(args.weight_ent),     # Trade-off weight for the entropy regularization loss
+    'weight_l2norm='+str(args.weight_l2norm),     # Weight to increase l2 norm
     'dataset=ROD-synROD' if not args.smallset else 'dataset=smallset'
 ]
 
@@ -337,8 +338,7 @@ for epoch in range(first_epoch, args.epochs + 1):
             features_source = torch.cat((feat_rgb, feat_depth), 1)
 
             # Compute predictions
-            preds = netF(features_source)
-
+            _, preds = netF(features_source)
             val_loss_cls += ce_loss(preds, img_label_source).item()
             correct += (torch.argmax(preds, dim=1) == img_label_source).sum().item()
             num_predictions += preds.shape[0]
@@ -446,7 +446,7 @@ for epoch in range(first_epoch, args.epochs + 1):
             features_target = torch.cat((feat_rgb, feat_depth), 1)
 
             # Compute predictions
-            preds = netF(features_target)
+            _, preds = netF(features_target)
 
             eval_loss += ce_loss(preds, img_label_target).item()
             correct += (torch.argmax(preds, dim=1) == img_label_target).sum().item()
