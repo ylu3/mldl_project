@@ -66,7 +66,7 @@ data_root_source, data_root_target, split_source_train, split_source_test, split
 train_set_source = DatasetGeneratorMultimodal(data_root_source, split_source_train, do_rot=False)
 
 # Source: test set
-test_set_source = DatasetGeneratorMultimodal(data_root_source, split_source_test, do_rot=False, ransform=test_transform)
+test_set_source = DatasetGeneratorMultimodal(data_root_source, split_source_test, do_rot=False, transform=test_transform)
 
 # Target: training set (for entropy)
 train_set_target = DatasetGeneratorMultimodal(data_root_target, split_target, ds_name='ROD',
