@@ -126,7 +126,7 @@ def add_base_args(parser: argparse.ArgumentParser):
     parser.add_argument("--lr", default=0.0001, type=float, help="Learning rate")
     parser.add_argument("--lr_mult", default=1.0, type=float, help="Learning rate multiplier for non-pretrained layers")
     parser.add_argument("--batch_size", default=32, type=int, help="Batch size")
-    parser.add_argument("--weight_decay", default=0.05, type=float, help ="Weight decay regularization")
+    parser.add_argument("--weight_decay", default=0.05, type=float, help="Weight decay regularization")
     parser.add_argument("--dropout_p", default=0.5, help="Dropout (not for the backbone!)")
 
     parser.add_argument('--test_batches', default=100, type=int,
