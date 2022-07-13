@@ -1,3 +1,27 @@
+### Instrucitons of our project
+1. Extract the dataset.
+```
+!tar -xvf "/ROD-synROD.tar" -C "/datasets"
+```
+2. To use small dataset, copy the txt file of small dateset to the ROD directory
+```
+!cp /mldl_project/smalldatasets/smallROD.txt /datasets/ROD-synROD/ROD
+!cp /mldl_project/smalldatasets/smallsynROD_test.txt /datasets/ROD-synROD/synROD
+!cp mldl_2022/mldl_project/smalldatasets/smallsynROD_train.txt /datasets/ROD-synROD/synROD
+```
+3. Run the model with train_eval.py
+```
+#For example
+!python3 /mldl_project/code/train_eval.py \
+          --data_root /datasets/ROD-synROD \
+          --logdir /content/drive/MyDrive/mldl_2022/log/final \
+          --lr=0.001 \
+          --batch_size=128 \
+          --weight_decay=0.0005 \ 
+          --epoch=40 \
+          --resume \ 
+```
+<!---
 # Relative Rotation
 Original implementation of the paper "Unsupervised Domain Adaptation through Inter-modal Rotation for RGB-D Object Recognition": https://arxiv.org/pdf/2004.10016.pdf
 
@@ -67,3 +91,4 @@ For more information about the datasets we presented and used for our experiment
   year={2020}
 }
 ```
+-->

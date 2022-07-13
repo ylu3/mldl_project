@@ -291,8 +291,8 @@ def extract_dataset(topK, firstC, input, ouput):
     df_rod_extracted.loc[df_rod_extracted['category'] < firstC].to_csv(ouput, header=None, index=None, sep=' ')
 
 def extract_small_dataset():
-    extract_dataset(20, 5, 'ROD/wrgbd_40k-split_sync.txt', 'smalldatasets/smallROD.txt')
-    extract_dataset(20, 5, 'synROD/synARID_50k-split_sync_train1.txt', 'smalldatasets/smallsynROD_train.txt')
-    extract_dataset(20, 5, 'synROD/synARID_50k-split_sync_test1.txt', 'smalldatasets/smallsynROD_test.txt')
+    extract_dataset(200, 5, 'ROD/wrgbd_40k-split_sync.txt', 'smalldatasets/smallROD.txt')
+    extract_dataset(200, 5, 'synROD/synARID_50k-split_sync_train1.txt', 'smalldatasets/smallsynROD_train.txt')
+    extract_dataset(200, 5, 'synROD/synARID_50k-split_sync_test1.txt', 'smalldatasets/smallsynROD_test.txt')
 
-# extract_small_dataset()
+extract_small_dataset()
