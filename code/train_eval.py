@@ -207,6 +207,7 @@ for epoch in range(first_epoch, args.epochs + 1):
         correct = 0.0
         num_predictions = 0.0
         train_loss = 0
+        std = 0
         for batch_num, (img_rgb, img_depth, img_label_source) in enumerate(train_loader_source_rec_iter):
             # The optimization step is performed by OptimizerManager
             with OptimizerManager(optims_list):
@@ -222,6 +223,7 @@ for epoch in range(first_epoch, args.epochs + 1):
                 feat_depth, _ = netG_depth(img_depth)
                 features_source = torch.cat((feat_rgb, feat_depth), 1)
                 logits = netF(features_source)
+                std = torch.std(logits)
 
                 # Classification los
                 train_loss_cls = ce_loss(logits, img_label_source)
@@ -305,6 +307,7 @@ for epoch in range(first_epoch, args.epochs + 1):
         #Output accuracy
         train_acc = correct / num_predictions
         print("Epoch: {} - Training accuracy (Classification): {}".format(epoch, train_acc))
+    
 
     # ========================= VALIDATION =========================
 
@@ -346,6 +349,7 @@ for epoch in range(first_epoch, args.epochs + 1):
     del img_rgb, img_depth, img_label_source, feat_rgb, feat_depth, preds
 
     #Log accuracy and loss
+    writer.add_scalar("Train/feature_std", std.item(), epoch)
     writer.add_scalar("Loss/train_cls", train_loss_cls.item(), epoch) # train loss after epoch i
     writer.add_scalar("Loss/val_cls", val_loss_cls_per_batch, epoch) # validation loss per batch after epoch i
     writer.add_scalar("Accuracy/train_cls", train_acc, epoch)
