@@ -51,7 +51,6 @@ def rotation_loss(radians, labels):
     :param radians:
     :return:
     """
-    print(radians)
     radians = torch.reshape(radians, (-1,))
     return torch.sin(abs(radians-labels)/2).sum() / radians.size(0)
 
